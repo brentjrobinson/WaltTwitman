@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     potential = []
     myStreamListener = MyStreamListener()
-    for tweet in tweepy.Cursor(api.search, q='*', tweet_mode='extended', lang='en').items(1000):
+    for tweet in tweepy.Cursor(api.search, q='pythonK', tweet_mode='extended', lang='en').items(2000):
         # Defining Tweets Creators Name
         tweettext = str(tweet.full_text.lower().encode('ascii',
                                                        errors='ignore'))
@@ -75,12 +75,18 @@ if __name__ == '__main__':
 
     print('/' * 80)
 
-    for i in range(0, len(potential)):
+    for tweets in potential:
+        print (tweets.content)
+    print('/' * 80)
+    for i in range(len(potential)-1, -1, -1):
         check = potential[i].rhymeword
-        j = 1
-        while j < len(potential):
+        j = len(potential)-1
+        while j >=0 :
             if check in potential[j].rhyminglist:
                 print(potential[i].content)
                 print(potential[j].content)
-            j += 1
+                del potential[j]
+            j -= 1
+
+
 
