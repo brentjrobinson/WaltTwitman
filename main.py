@@ -1,11 +1,11 @@
 import re
+import string
 from pprint import pprint
 
 import tweepy
-from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
-from tweepy import Stream
-import json
+from rhyme import rhymes
+import pronouncing
 import configparser
 
 config = configparser.ConfigParser()
@@ -16,10 +16,24 @@ access_token = config['access_token_key']['key']
 access_token_secret = config['access_token_secret']['key']
 
 
-# This is a basic listener that just prints received tweets to stdout.
+class Tweet(object):
+    def __init__(self, content, id):
+        self.content = content
+        self.id = id
+        self.rhymeword = None
+        self.rhyminglist = []
+
+    def get_rhyme(self):
+        list = self.content.strip()
+        result = re.sub(r"http\S+", "", list)
+        result = re.sub(r'[^\w\s]', '', result)
+        last = result.rsplit(None, 1)[-1]
+        last.translate(string.punctuation)
+        self.rhymeword = last
 
 
 if __name__ == '__main__':
+
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
 
@@ -28,15 +42,45 @@ if __name__ == '__main__':
 
     class MyStreamListener(tweepy.StreamListener):
 
-
         def on_error(self, status):
             print(status)
 
-        def on_status(self, status):
-            print(status.text)
+        # def on_status(self, status):
+        #     #print(status.text)
 
 
+    potential = []
     myStreamListener = MyStreamListener()
-    myStream = tweepy.Stream(auth=api.auth, listener=myStreamListener)
+    for tweet in tweepy.Cursor(api.search, q='*', tweet_mode='extended', lang='en').items(1000):
+        # Defining Tweets Creators Name
+        tweettext = str(tweet.full_text.lower().encode('ascii',
+                                                       errors='ignore'))
+        # Defining Tweets Id
+        tweetid = tweet.id
 
-    myStream.filter(languages=["en"], track=["a", "the", "i", "you", "u"])
+        # printing the text of the tweet
+
+        tweet = Tweet(tweettext, tweetid)
+        tweet.get_rhyme()
+        tweet.rhyminglist = rhymes(tweet.rhymeword)
+        if not tweet.rhyminglist:
+            print("NO Found rhymes")
+        elif len(tweet.rhymeword) > 4:
+            print("Found rhymes")
+            potential.append(tweet)
+        if len(potential) > 100:
+            break
+
+    couplets = []
+
+    print('/' * 80)
+
+    for i in range(0, len(potential)):
+        check = potential[i].rhymeword
+        j = 1
+        while j < len(potential):
+            if check in potential[j].rhyminglist:
+                print(potential[i].content)
+                print(potential[j].content)
+            j += 1
+
